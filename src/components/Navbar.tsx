@@ -21,7 +21,7 @@ export default function Navbar() {
              <div className="w-full h-full bg-bg rounded-full" />
           </div>
           <div className="relative z-10 w-[calc(100%-2px)] h-[calc(100%-2px)] bg-bg rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <span className="font-display italic text-[13px] text-text-primary">MRK</span>
+            <span className="font-display italic text-[13px] text-text-primary">ن</span>
           </div>
         </div>
 
