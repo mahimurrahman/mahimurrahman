@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mahimur Rahman</title>
+
+    <!-- Helvetica Neue ME webfont -->
+    <link rel="stylesheet"
+        href="https://db.onlinewebfonts.com/c/95cecf452d3208890088a5b4c19c7ecf?family=Helvetica+Neue+ME" media="print"
+        onload="this.media='all'" />
+    <noscript>
+        <link rel="stylesheet"
+            href="https://db.onlinewebfonts.com/c/95cecf452d3208890088a5b4c19c7ecf?family=Helvetica+Neue+ME" />
+    </noscript>
+
+    <!-- Tailwind CSS with custom cream palette & typography extensions -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: '#efeee9',
+                    },
+                    fontFamily: {
+                        hn: ['"Helvetica Neue ME"', 'Helvetica', 'Arial', 'sans-serif'],
+                        sans: ['"Helvetica Neue ME"', 'Helvetica', 'Arial', 'sans-serif'],
+                        serif: ['"Helvetica Neue ME"', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @font-face {
+            font-family: "Helvetica Neue ME";
+            src: url("https://db.onlinewebfonts.com/t/95cecf452d3208890088a5b4c19c7ecf.woff2") format("woff2"),
+                url("https://db.onlinewebfonts.com/t/95cecf452d3208890088a5b4c19c7ecf.woff") format("woff");
+            font-display: swap;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0d0d0d;
+            color: #efeee9;
+            font-family: 'Helvetica Neue ME', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Choreographed Entrance Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes riseIn {
+            from {
+                opacity: 0;
+                transform: translateY(4vh) scale(1.03);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(28px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleLine {
+            from {
+                transform: scaleX(0);
+            }
+
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+        @keyframes marqueeScroll {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        .anim-fade-in {
+            animation: fadeIn 1.2s ease-out both;
+        }
+
+        .anim-rise-in {
+            animation: riseIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .anim-fade-up {
+            animation: fadeUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        .anim-line {
+            transform-origin: left;
+            animation: scaleLine 1.1s cubic-bezier(0.76, 0, 0.24, 1) both;
+        }
+
+        .marquee {
+            animation: marqueeScroll 30s linear infinite;
+        }
+
+        /* Custom subtle scrollbar for the dossier drawer */
+        .editorial-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .editorial-scroll::-webkit-scrollbar-track {
+            background: #141414;
+        }
+
+        .editorial-scroll::-webkit-scrollbar-thumb {
+            background: rgba(239, 238, 233, 0.25);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .anim-fade-in,
+            .anim-rise-in,
+            .anim-fade-up,
+            .anim-line,
+            .marquee {
+                animation-duration: 0.01ms !important;
+                animation-delay: 0ms !important;
+                animation-iteration-count: 1 !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-[#0d0d0d] text-cream font-hn selection:bg-cream selection:text-[#141414]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Architectural full-bleed background
+        const BG_IMAGE_URL =
+            "https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260729_022513_486985a2-ac8c-4278-91a8-071dcd9fcaff.png&w=1280&q=85";
+
+        // Default portrait file matching your uploaded asset
+        const PORTRAIT_FILENAME = "mahim.png";
+
+        // Removes solid white background so typography passes cleanly behind Mahim's hair & shoulders
+        function processPortraitTransparency(imageUrl, callback) {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+                try {
+                    const canvas = document.createElement("canvas");
+                    const w = img.naturalWidth || img.width;
+                    const h = img.naturalHeight || img.height;
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+
+                    const imgData = ctx.getImageData(0, 0, w, h);
+                    const data = imgData.data;
+
+                    // If image already has transparent borders, preserve native asset directly
+                    let hasTransparency = false;
+                    for (let x = 0; x < w; x += 10) {
+                        if (data[x * 4 + 3] === 0) { hasTransparency = true; break; }
+                    }
+                    if (hasTransparency) {
+                        callback(imageUrl);
+                        return;
+                    }
+
+                    const visited = new Uint8Array(w * h);
+                    const queue = [];
+
+                    // Seed background detection from top, left, and right borders
+                    for (let x = 0; x < w; x++) {
+                        queue.push(x, 0);
+                    }
+                    for (let y = 0; y < h; y++) {
+                        queue.push(0, y);
+                        queue.push(w - 1, y);
+                    }
+
+                    const isWhiteBg = (idx) => {
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+                        return r > 230 && g > 230 && b > 230;
+                    };
+
+                    let head = 0;
+                    while (head < queue.length) {
+                        const cx = queue[head++];
+                        const cy = queue[head++];
+                        const pIdx = cy * w + cx;
+                        if (visited[pIdx]) continue;
+                        visited[pIdx] = 1;
+
+                        const byteIdx = pIdx * 4;
+                        if (isWhiteBg(byteIdx)) {
+                            data[byteIdx + 3] = 0; // make transparent
+
+                            if (cx > 0 && !visited[pIdx - 1]) queue.push(cx - 1, cy);
+                            if (cx < w - 1 && !visited[pIdx + 1]) queue.push(cx + 1, cy);
+                            if (cy > 0 && !visited[pIdx - w]) queue.push(cx, cy - 1);
+                            if (cy < h - 1 && !visited[pIdx + w]) queue.push(cx, cy + 1);
+                        }
+                    }
+
+                    ctx.putImageData(imgData, 0, 0);
+                    callback(canvas.toDataURL("image/png"));
+                } catch (err) {
+                    callback(imageUrl);
+                }
+            };
+            img.onerror = () => callback(imageUrl);
+            img.src = imageUrl;
+        }
+
+        // Lucide React X icon
+        const LucideX = ({ size = 26, strokeWidth = 1.5, className = "" }) => (
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={size}
+                height={size}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={className}
+            >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+            </svg>
+        );
+
+        // Comprehensive Dossier for Mahimur Rahman Khan (github.com/mahimurrahman)
+        const MAHIM_DATA = {
+            name: "Mahimur Rahman Khan",
+            shortName: "Mahim",
+            role: "Mathematics Student & Technologist",
+            location: "Savar, Dhaka, Bangladesh",
+            domain: "mahimurrahman.me",
+            linktree: "https://linktr.ee/mahimurrahman",
+            github: "https://github.com/mahimurrahman",
+            linkedin: "https://www.linkedin.com/in/mahimurrahman-khan",
+            email: "mahimurrahmmankhan@gmail.com",
+            focus: "Mathematics • Artificial Intelligence • Intelligent Systems • Software Architecture",
+            tagline: "Exploring artificial intelligence, intelligent systems, and the future of technology.",
+            stats: [
+                { label: "Projects Built", value: "5+", desc: "Solving real-world problems through intelligent systems" },
+                { label: "Technologies Used", value: "10+", desc: "Mastered tools, frameworks, and foundational math" },
+                { label: "Areas of Focus", value: "Core", desc: "AI Systems • Automation • Scalable Software" },
+            ],
+            narrative: [
+                "I am a mathematics student and technologist based in Bangladesh, exploring the critical intersection between pure mathematical structures, artificial intelligence, and scalable software systems.",
+                "Rather than merely assembling software components, I focus on building resilient, autonomous systems with foundational depth. My work revolves around AI agents, intelligent automation pipelines, and exploring the architectural layers that power modern intelligence.",
+                "Guided by rigorous mathematical thinking—spanning linear algebra, discrete systems, and formal logic—I strive to design technology that augments human cognitive capability and builds a meaningful digital future.",
+            ],
+            areasOfInterest: [
+                {
+                    id: "01",
+                    title: "Artificial Intelligence",
+                    summary: "Investigating deep representations, cognitive architectures, vector embeddings, and reasoning loops that power modern neural intelligence."
+                },
+                {
+                    id: "02",
+                    title: "AI Agents & Automation",
+                    summary: "Building autonomous goal-seeking workflows, tool-use systems, deterministic execution graphs, and self-correcting agent swarms."
+                },
+                {
+                    id: "03",
+                    title: "Intelligent Software Systems",
+                    summary: "Architecting high-throughput distributed backends, resilient event loops, and intelligent micro-services that act as the backbone for machine learning."
+                },
+                {
+                    id: "04",
+                    title: "Human–AI Collaboration",
+                    summary: "Designing interfaces and co-pilot systems where machines augment human intellectual depth rather than replacing creative agency."
+                },
+                {
+                    id: "05",
+                    title: "Future of Technology",
+                    summary: "Examining post-deep-learning paradigms, local edge compute, verifiable AI execution, and ethical computing foundations."
+                },
+                {
+                    id: "06",
+                    title: "Mathematics & Logical Thinking",
+                    summary: "Grounding engineering in formal linear algebra, multivariable optimization, probability theory, discrete graph structures, and algorithmic proofs."
+                },
+            ],
+            thoughts: [
+                {
+                    title: "The Future of Human + AI Collaboration",
+                    readTime: "5 min read",
+                    date: "Recent Thought",
+                    excerpt: "AI is transitioning from a conversational novelty into an external cognitive cortex. The real breakthrough isn't artificial general intelligence acting in isolation, but synchronized human-machine symbiotic loops.",
+                    content: "The prevailing narrative often frames AI as a looming replacement for human intellect. However, historically, our greatest computational leaps have always been augmentative. When an engineer or mathematician pairs with an agent capable of navigating high-dimensional latent space in real time, the friction between hypothesis and experimentation collapses. The future belongs to those who view intelligent models not as workers, but as computational lenses."
+                },
+                {
+                    title: "Why APIs Are the Infrastructure of Modern AI",
+                    readTime: "4 min read",
+                    date: "Recent Thought",
+                    excerpt: "Models are the compute engines, but composable, standardized APIs are the circulatory system enabling intelligence to permeate software.",
+                    content: "Weights and neural networks are inert matrices without structured I/O. The real capability leap in recent AI development didn't occur purely due to parameter scaling—it happened because APIs allowed agents to call functions, query vector databases, trigger webhooks, and alter external state. In essence, APIs are the sensory and motor nerves connecting raw mathematical inference to physical reality."
+                },
+                {
+                    title: "Building Systems Instead of Just Software",
+                    readTime: "6 min read",
+                    date: "Recent Thought",
+                    excerpt: "Software produces outputs for given inputs; systems manage continuous feedback, self-healing, state convergence, and emergent complexity.",
+                    content: "Most modern development emphasizes rapid feature assembly. But as systems integrate probabilistic models, traditional deterministic code patterns fail. Engineering in the era of intelligence demands systemic thinking: designing fail-safes, observability loops, self-correcting prompt flows, and distributed data pipelines that remain stable under non-deterministic conditions."
+                },
+                {
+                    title: "The Intelligence Layer of the Internet",
+                    readTime: "7 min read",
+                    date: "Recent Thought",
+                    excerpt: "We are currently laying the foundations for an ambient intelligence layer embedded directly into the fabric of the web.",
+                    content: "The original Internet was designed to transmit raw packets of data. The Web 2.0 era organized human social graphs and platform commerce. Today, we are constructing the third sovereign layer: an omnipresent cognitive mesh where information is not simply retrieved, but contextualized, reasoned about, and synthesized on demand by autonomous background processes."
+                }
+            ]
+        };
+
+        function App() {
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+            const [activeDossierTab, setActiveDossierTab] = useState(null);
+            const [selectedThought, setSelectedThought] = useState(null);
+            const [copiedToast, setCopiedToast] = useState(null);
+            const [portraitSrc, setPortraitSrc] = useState(PORTRAIT_FILENAME);
+
+            // Synchronize document title and lock scroll during modal views
+            useEffect(() => {
+                document.title = document.title || "Mahimur Rahman";
+                processPortraitTransparency(PORTRAIT_FILENAME, (keyedDataUrl) => {
+                    setPortraitSrc(keyedDataUrl);
+                });
+            }, []);
+
+            useEffect(() => {
+                if (mobileMenuOpen || activeDossierTab || selectedThought) {
+                    document.body.style.overflow = "hidden";
+                } else {
+                    document.body.style.overflow = "";
+                }
+                return () => {
+                    document.body.style.overflow = "";
+                };
+            }, [mobileMenuOpen, activeDossierTab, selectedThought]);
+
+            const copyToClipboard = (text, label) => {
+                const el = document.createElement("textarea");
+                el.value = text;
+                el.style.position = "fixed";
+                el.style.opacity = "0";
+                document.body.appendChild(el);
+                el.select();
+                try {
+                    document.execCommand("copy");
+                    setCopiedToast(`Copied ${label}`);
+                    setTimeout(() => setCopiedToast(null), 2400);
+                } catch (e) {
+                    setCopiedToast("Copy failed");
+                }
+                document.body.removeChild(el);
+            };
+
+            const navItems = [
+                { label: "Thoughts", tab: "thoughts" },
+                { label: "Interests", tab: "interests" },
+            ];
+
+            const socialItems = [
+                { label: "Linktree", href: MAHIM_DATA.linktree, external: true },
+                { label: "GitHub", href: MAHIM_DATA.github, external: true },
+                { label: "LinkedIn", href: MAHIM_DATA.linkedin, external: true },
+                { label: "Contact", tab: "contact" },
+            ];
+
+            const handleNavClick = (e, tab) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                setActiveDossierTab(tab);
+            };
+
+            return (
+                <section className="relative h-[100dvh] w-full overflow-hidden bg-[#0d0d0d] font-hn text-cream select-none sm:select-auto">
+                    {/* Background architectural image */}
+                    <img
+                        src={BG_IMAGE_URL}
+                        alt=""
+                        className="anim-fade-in absolute inset-0 h-full w-full object-cover opacity-60"
+                    />
+
+                    {/* Continuous 30s Infinite Marquee */}
+                    <div
+                        className="anim-fade-up absolute inset-x-0 top-[16vh] sm:top-[14vh] z-10 overflow-hidden"
+                        style={{ animationDelay: "500ms" }}
+                    >
+                        <div className="marquee flex w-max whitespace-nowrap font-hn text-[16vh] sm:text-[26vh] leading-none text-cream">
+                            <span className="pr-[6vw]">Mahimur Rahman &mdash;&nbsp;</span>
+                            <span className="pr-[6vw]">Mahimur Rahman &mdash;&nbsp;</span>
+                        </div>
+                    </div>
+
+                    {/* Horizontal Animated Cream Rule */}
+                    <div
+                        className="anim-line absolute inset-x-6 sm:inset-x-10 bottom-[5.5rem] sm:bottom-28 z-10 h-0.5 bg-cream"
+                        style={{ animationDelay: "1200ms" }}
+                    />
+
+                    { }
+                    {/* Layer 20: Editorial Cutout Portrait sitting directly over the Marquee (matching reference) */}
+                    <div
+                        className="anim-rise-in pointer-events-none absolute inset-x-0 bottom-0 z-20 mx-auto flex items-end justify-center h-[76vh] sm:h-[84vh] md:h-[90vh]"
+                        style={{ animationDelay: "300ms" }}
+                    >
+                        <div className="relative h-full w-full flex items-end justify-center">
+                            <img
+                                src={portraitSrc}
+                                alt="Mahimur Rahman"
+                                className="h-full w-auto max-w-[92vw] sm:max-w-[70vw] md:max-w-[58vw] object-contain object-bottom [filter:drop-shadow(0_12px_24px_rgba(0,0,0,0.35))_drop-shadow(0_4px_10px_rgba(0,0,0,0.18))]"
+                                onError={(e) => {
+                                    if (e.target.src !== PORTRAIT_FILENAME) {
+                                        e.target.src = PORTRAIT_FILENAME;
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Header */}
+                    <header className="absolute inset-x-0 top-0 z-30 flex items-start justify-between px-6 pt-6 sm:px-10 sm:pt-8">
+                        <div
+                            className="anim-fade-up flex flex-wrap items-center gap-4"
+                            style={{ animationDelay: "800ms" }}
+                        >
+                            <a
+                                href="#"
+                                onClick={(e) => handleNavClick(e, "all")}
+                                className="font-hn text-lg tracking-wide text-cream transition-opacity duration-300 hover:opacity-60"
+                            >
+                                Mahim
+                            </a>
+                            <button
+                                type="button"
+                                onClick={() => setActiveDossierTab("all")}
+                                className="hidden md:inline-block text-xs tracking-[0.18em] uppercase text-cream/60 hover:text-cream transition-opacity duration-300"
+                                title="Open Complete Portfolio Dossier"
+                            >
+                                [ Open Index ]
+                            </button>
+                        </div>
+
+                        <div className="hidden sm:flex items-start gap-16 lg:gap-24">
+                            <div
+                                className="anim-fade-up flex flex-col items-start gap-1 text-sm text-cream"
+                                style={{ animationDelay: "900ms" }}
+                            >
+                                <span>2026</span>
+                                <span className="text-[10px] uppercase tracking-[0.16em] text-cream/40">
+                                    Math &bull; AI
+                                </span>
+                            </div>
+
+                            <nav className="flex flex-col gap-0.5 text-sm">
+                                {navItems.map((item, i) => (
+                                    <a
+                                        key={item.label}
+                                        href="#"
+                                        onClick={(e) => handleNavClick(e, item.tab)}
+                                        className="anim-fade-up text-cream transition-opacity duration-300 hover:opacity-60"
+                                        style={{ animationDelay: `${1000 + i * 80}ms` }}
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </nav>
+
+                            <div className="flex flex-col gap-0.5 text-sm">
+                                {socialItems.map((item, i) => (
+                                    <a
+                                        key={item.label}
+                                        href={item.href || "#"}
+                                        target={item.external ? "_blank" : undefined}
+                                        rel={item.external ? "noopener noreferrer" : undefined}
+                                        onClick={item.tab ? (e) => handleNavClick(e, item.tab) : undefined}
+                                        className="anim-fade-up text-cream transition-opacity duration-300 hover:opacity-60"
+                                        style={{ animationDelay: `${1150 + i * 80}ms` }}
+                                    >
+                                        {item.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Mobile Hamburger Toggle Button */}
+                    <button
+                        type="button"
+                        aria-label={mobileMenuOpen ? "Close Menu" : "Open Menu"}
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="anim-fade-up sm:hidden fixed right-6 top-5 z-50 flex h-10 w-10 items-center justify-center text-cream focus:outline-none"
+                        style={{ animationDelay: "900ms" }}
+                    >
+                        <div className="relative h-4 w-6">
+                            <span
+                                className={`absolute left-0 h-[1.5px] w-6 bg-cream transition-all duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] ${mobileMenuOpen
+                                        ? "top-1/2 -translate-y-1/2 rotate-45"
+                                        : "top-0"
+                                    }`}
+                            />
+                            <span
+                                className={`absolute left-0 top-1/2 h-[1.5px] w-6 -translate-y-1/2 bg-cream transition-opacity duration-300 ${mobileMenuOpen ? "opacity-0" : "opacity-100"
+                                    }`}
+                            />
+                            <span
+                                className={`absolute left-0 h-[1.5px] w-6 bg-cream transition-all duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] ${mobileMenuOpen
+                                        ? "top-1/2 -translate-y-1/2 -rotate-45"
+                                        : "bottom-0"
+                                    }`}
+                            />
+                        </div>
+                    </button>
+
+                    {/* Footer */}
+                    <footer className="absolute inset-x-0 bottom-0 z-30 sm:z-10 flex items-end justify-between px-6 pb-5 sm:px-10 sm:pb-8 text-xs sm:text-sm leading-relaxed font-hn text-cream">
+                        <div
+                            className="anim-fade-up cursor-pointer transition-opacity duration-300 hover:opacity-75"
+                            style={{ animationDelay: "1400ms" }}
+                            onClick={() => setActiveDossierTab("interests")}
+                            title="Click to view Focus Areas & Interests"
+                        >
+                            <p>Mathematics &bull; Artificial Intelligence</p>
+                            <p>Intelligent Systems &amp; Automation</p>
+                            <p>Building Systems Instead of Software</p>
+                        </div>
+
+                        <div
+                            className="anim-fade-up text-right cursor-pointer transition-opacity duration-300 hover:opacity-75"
+                            style={{ animationDelay: "1550ms" }}
+                            onClick={() => setActiveDossierTab("all")}
+                            title="Click to view Dossier"
+                        >
+                            <p>Savar, Dhaka</p>
+                            <p className="underline underline-offset-4">{MAHIM_DATA.domain}</p>
+                        </div>
+                    </footer>
+
+                    {/* Mobile Drawer (sm:hidden) */}
+                    <div
+                        className={`sm:hidden fixed inset-0 z-40 transition-opacity duration-500 ${mobileMenuOpen
+                                ? "opacity-100 pointer-events-auto"
+                                : "opacity-0 pointer-events-none"
+                            }`}
+                    >
+                        <div
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            onClick={() => setMobileMenuOpen(false)}
+                        />
+
+                        <div
+                            className={`absolute right-0 top-0 h-full w-[80%] max-w-sm bg-[#141414] px-8 py-10 text-cream flex flex-col justify-between transition-transform duration-[600ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+                                }`}
+                        >
+                            <button
+                                type="button"
+                                aria-label="Close Drawer"
+                                onClick={() => setMobileMenuOpen(false)}
+                                className={`absolute right-6 top-6 text-cream transition-all duration-300 ${mobileMenuOpen
+                                        ? "rotate-0 opacity-100 delay-300"
+                                        : "rotate-90 opacity-0"
+                                    }`}
+                            >
+                                <LucideX size={26} strokeWidth={1.5} />
+                            </button>
+
+                            <div className="mt-12">
+                                <p
+                                    className={`text-xs uppercase tracking-[0.2em] text-cream/50 mb-6 transition-all duration-500 ${mobileMenuOpen
+                                            ? "translate-y-0 opacity-100 delay-[250ms]"
+                                            : "translate-y-4 opacity-0"
+                                        }`}
+                                >
+                                    Site Index
+                                </p>
+                                <nav className="flex flex-col gap-3">
+                                    {navItems.map((item, i) => (
+                                        <a
+                                            key={item.label}
+                                            href="#"
+                                            onClick={(e) => handleNavClick(e, item.tab)}
+                                            className={`text-4xl font-hn text-cream transition-all duration-500 hover:opacity-60 ${mobileMenuOpen
+                                                    ? "translate-y-0 opacity-100"
+                                                    : "translate-y-6 opacity-0"
+                                                }`}
+                                            style={{
+                                                transitionDelay: mobileMenuOpen
+                                                    ? `${300 + i * 80}ms`
+                                                    : "0ms",
+                                            }}
+                                        >
+                                            {item.label}
+                                        </a>
+                                    ))}
+                                    <a
+                                        href="#"
+                                        onClick={(e) => handleNavClick(e, "all")}
+                                        className={`text-2xl font-hn text-cream/70 pt-2 transition-all duration-500 hover:opacity-60 ${mobileMenuOpen
+                                                ? "translate-y-0 opacity-100"
+                                                : "translate-y-6 opacity-0"
+                                            }`}
+                                        style={{
+                                            transitionDelay: mobileMenuOpen ? "540ms" : "0ms",
+                                        }}
+                                    >
+                                        Full Dossier &rarr;
+                                    </a>
+                                </nav>
+                            </div>
+
+                            <div>
+                                <p
+                                    className={`text-xs uppercase tracking-[0.2em] text-cream/50 mb-4 transition-all duration-500 ${mobileMenuOpen
+                                            ? "translate-y-0 opacity-100 delay-[500ms]"
+                                            : "translate-y-4 opacity-0"
+                                        }`}
+                                >
+                                    Connect
+                                </p>
+                                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                                    {socialItems.map((item, i) => (
+                                        <a
+                                            key={item.label}
+                                            href={item.href || "#"}
+                                            target={item.external ? "_blank" : undefined}
+                                            rel={item.external ? "noopener noreferrer" : undefined}
+                                            onClick={item.tab ? (e) => handleNavClick(e, item.tab) : undefined}
+                                            className={`text-cream transition-all duration-500 hover:opacity-60 ${mobileMenuOpen
+                                                    ? "translate-y-0 opacity-100"
+                                                    : "translate-y-4 opacity-0"
+                                                }`}
+                                            style={{
+                                                transitionDelay: mobileMenuOpen
+                                                    ? `${550 + i * 60}ms`
+                                                    : "0ms",
+                                            }}
+                                        >
+                                            {item.label}
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Slide-over Editorial Portfolio Dossier */}
+                    <div
+                        className={`fixed inset-0 z-50 transition-opacity duration-500 ${activeDossierTab
+                                ? "opacity-100 pointer-events-auto"
+                                : "opacity-0 pointer-events-none"
+                            }`}
+                    >
+                        <div
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setActiveDossierTab(null)}
+                        />
+
+                        <aside
+                            className={`editorial-scroll absolute right-0 top-0 h-full w-full max-w-3xl bg-[#141414] text-cream px-6 py-8 sm:px-12 sm:py-12 overflow-y-auto transition-transform duration-[600ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${activeDossierTab ? "translate-x-0" : "translate-x-full"
+                                }`}
+                        >
+                            {/* Dossier Header */}
+                            <div className="flex items-start justify-between border-b border-cream/25 pb-6 gap-4">
+                                <div className="flex items-center gap-4 sm:gap-6">
+                                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border border-cream/30 overflow-hidden bg-[#171717] flex-shrink-0">
+                                        <img
+                                            src={portraitSrc}
+                                            alt="Mahimur Rahman"
+                                            className="h-full w-full object-cover object-top"
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs uppercase tracking-[0.2em] text-cream/50">
+                                            Editorial Portfolio &bull; 2026
+                                        </p>
+                                        <h2 className="text-3xl sm:text-5xl font-hn tracking-tight mt-1">
+                                            {MAHIM_DATA.name}
+                                        </h2>
+                                        <p className="text-xs sm:text-sm text-cream/70 mt-1">
+                                            {MAHIM_DATA.role} &mdash; {MAHIM_DATA.location}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    aria-label="Close Dossier"
+                                    onClick={() => setActiveDossierTab(null)}
+                                    className="p-1 text-cream transition-opacity duration-300 hover:opacity-60"
+                                >
+                                    <LucideX size={26} strokeWidth={1.5} />
+                                </button>
+                            </div>
+
+                            {/* Chapter Tab Filters */}
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-cream/15 py-4 text-xs uppercase tracking-[0.18em]">
+                                {[
+                                    { id: "all", label: "00 Overview" },
+                                    { id: "thoughts", label: "01 Recent Thoughts" },
+                                    { id: "interests", label: "02 Areas of Interest" },
+                                    { id: "contact", label: "03 Connect" },
+                                ].map((tab) => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveDossierTab(tab.id)}
+                                        className={`py-1 transition-opacity duration-300 ${activeDossierTab === tab.id
+                                                ? "text-cream border-b border-cream"
+                                                : "text-cream/45 hover:text-cream"
+                                            }`}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Toast Notification */}
+                            {copiedToast && (
+                                <div className="border-b border-cream bg-cream text-[#141414] px-4 py-2 text-xs uppercase tracking-[0.2em]">
+                                    {copiedToast}
+                                </div>
+                            )}
+
+                            <div className="space-y-12 py-8">
+                                {/* Chapter 0: Narrative & Core Philosophy */}
+                                {(activeDossierTab === "all") && (
+                                    <div>
+                                        <div className="flex items-baseline justify-between border-b border-cream pb-2 mb-6">
+                                            <span className="text-xs uppercase tracking-[0.2em] text-cream/50">
+                                                00 &mdash; Narrative
+                                            </span>
+                                            <h3 className="text-xl sm:text-2xl font-hn">
+                                                Philosophy &amp; Focus
+                                            </h3>
+                                        </div>
+                                        <div className="space-y-5 text-sm sm:text-base leading-relaxed text-cream/90">
+                                            {MAHIM_DATA.narrative.map((p, idx) => (
+                                                <p key={idx}>{p}</p>
+                                            ))}
+                                        </div>
+
+                                        {/* Metrics Row */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 mt-6 border-t border-cream/15">
+                                            {MAHIM_DATA.stats.map((s) => (
+                                                <div key={s.label} className="border-l border-cream/30 pl-4">
+                                                    <p className="text-3xl font-hn text-cream">{s.value}</p>
+                                                    <p className="text-xs uppercase tracking-[0.16em] text-cream/60 mt-1">{s.label}</p>
+                                                    <p className="text-xs text-cream/40 mt-1 leading-normal">{s.desc}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Chapter 1: Recent Thoughts & Essays */}
+                                {(activeDossierTab === "all" || activeDossierTab === "thoughts") && (
+                                    <div>
+                                        <div className="flex items-baseline justify-between border-b border-cream pb-2 mb-6">
+                                            <span className="text-xs uppercase tracking-[0.2em] text-cream/50">
+                                                01 &mdash; Writing
+                                            </span>
+                                            <h3 className="text-xl sm:text-2xl font-hn">
+                                                Recent Thoughts &amp; Ideas
+                                            </h3>
+                                        </div>
+
+                                        <p className="text-xs text-cream/60 mb-6 uppercase tracking-[0.15em]">
+                                            A collection of reflections on artificial intelligence, technology, and intelligent systems.
+                                        </p>
+
+                                        <div className="divide-y divide-cream/15 border-t border-b border-cream/15">
+                                            {MAHIM_DATA.thoughts.map((th, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    onClick={() => setSelectedThought(th)}
+                                                    className="py-5 group cursor-pointer transition-colors duration-300 hover:bg-cream/5 px-2"
+                                                >
+                                                    <div className="flex items-center justify-between text-xs text-cream/45 uppercase tracking-[0.14em]">
+                                                        <span>{th.date}</span>
+                                                        <span>{th.readTime} &rarr;</span>
+                                                    </div>
+                                                    <h4 className="text-lg sm:text-xl font-hn text-cream mt-1 group-hover:text-cream/80 transition-colors">
+                                                        {th.title}
+                                                    </h4>
+                                                    <p className="text-xs sm:text-sm text-cream/70 mt-2 leading-relaxed">
+                                                        {th.excerpt}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Chapter 2: Areas of Interest */}
+                                {(activeDossierTab === "all" || activeDossierTab === "interests") && (
+                                    <div>
+                                        <div className="flex items-baseline justify-between border-b border-cream pb-2 mb-6">
+                                            <span className="text-xs uppercase tracking-[0.2em] text-cream/50">
+                                                02 &mdash; Exploration
+                                            </span>
+                                            <h3 className="text-xl sm:text-2xl font-hn">
+                                                Areas of Interest
+                                            </h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {MAHIM_DATA.areasOfInterest.map((area) => (
+                                                <div
+                                                    key={area.id}
+                                                    className="border border-cream/15 p-5 bg-[#171717] hover:border-cream/40 transition-colors duration-300"
+                                                >
+                                                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.16em] text-cream/40 mb-2">
+                                                        <span>{area.id}</span>
+                                                        <span>System Vector</span>
+                                                    </div>
+                                                    <h4 className="text-base sm:text-lg font-hn text-cream mb-2">
+                                                        {area.title}
+                                                    </h4>
+                                                    <p className="text-xs sm:text-sm text-cream/70 leading-relaxed">
+                                                        {area.summary}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Chapter 3: Connect & Links */}
+                                {(activeDossierTab === "all" || activeDossierTab === "contact") && (
+                                    <div>
+                                        <div className="flex items-baseline justify-between border-b border-cream pb-2 mb-6">
+                                            <span className="text-xs uppercase tracking-[0.2em] text-cream/50">
+                                                03 &mdash; Network
+                                            </span>
+                                            <h3 className="text-xl sm:text-2xl font-hn">
+                                                Connect &amp; Collaborate
+                                            </h3>
+                                        </div>
+
+                                        <p className="text-sm sm:text-base text-cream/80 leading-relaxed mb-6">
+                                            Have an idea, project, or collaboration in mind? I'm always open to discussions about mathematics, artificial intelligence, and building meaningful digital systems.
+                                        </p>
+
+                                        <div className="divide-y divide-cream/15 border-t border-b border-cream/15 text-sm">
+                                            <div className="py-3.5 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                                                <span className="text-cream/50 uppercase tracking-[0.12em] text-xs">Linktree</span>
+                                                <a href={MAHIM_DATA.linktree} target="_blank" rel="noopener noreferrer" className="sm:col-span-2 text-cream font-mono hover:underline">
+                                                    linktr.ee/mahimurrahman &rarr;
+                                                </a>
+                                            </div>
+                                            <div className="py-3.5 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                                                <span className="text-cream/50 uppercase tracking-[0.12em] text-xs">Primary Web</span>
+                                                <a href={`https://${MAHIM_DATA.domain}`} target="_blank" rel="noopener noreferrer" className="sm:col-span-2 text-cream hover:underline">
+                                                    https://{MAHIM_DATA.domain} &rarr;
+                                                </a>
+                                            </div>
+                                            <div className="py-3.5 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                                                <span className="text-cream/50 uppercase tracking-[0.12em] text-xs">GitHub</span>
+                                                <a href={MAHIM_DATA.github} target="_blank" rel="noopener noreferrer" className="sm:col-span-2 text-cream font-mono hover:underline">
+                                                    github.com/mahimurrahman &rarr;
+                                                </a>
+                                            </div>
+                                            <div className="py-3.5 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                                                <span className="text-cream/50 uppercase tracking-[0.12em] text-xs">LinkedIn</span>
+                                                <a href={MAHIM_DATA.linkedin} target="_blank" rel="noopener noreferrer" className="sm:col-span-2 text-cream hover:underline">
+                                                    linkedin.com/in/mahimurrahman-khan &rarr;
+                                                </a>
+                                            </div>
+                                            <div className="py-3.5 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                                                <span className="text-cream/50 uppercase tracking-[0.12em] text-xs">Email</span>
+                                                <span className="sm:col-span-2 text-cream">{MAHIM_DATA.email}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-6 pt-6 text-xs uppercase tracking-[0.18em]">
+                                            <a
+                                                href={MAHIM_DATA.linktree}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="border-b border-cream pb-1 text-cream hover:opacity-60 transition-opacity duration-300"
+                                            >
+                                                Open Linktree &rarr;
+                                            </a>
+                                            <button
+                                                onClick={() => copyToClipboard(MAHIM_DATA.linktree, "Linktree URL")}
+                                                className="border-b border-cream pb-1 text-cream hover:opacity-60 transition-opacity duration-300"
+                                            >
+                                                Copy Linktree
+                                            </button>
+                                            <button
+                                                onClick={() => copyToClipboard(MAHIM_DATA.email, "Email Address")}
+                                                className="border-b border-cream pb-1 text-cream hover:opacity-60 transition-opacity duration-300"
+                                            >
+                                                Copy Email
+                                            </button>
+                                            <button
+                                                onClick={() => copyToClipboard(MAHIM_DATA.github, "GitHub Profile Link")}
+                                                className="border-b border-cream pb-1 text-cream hover:opacity-60 transition-opacity duration-300"
+                                            >
+                                                Copy GitHub
+                                            </button>
+                                            <a
+                                                href={`mailto:${MAHIM_DATA.email}`}
+                                                className="border-b border-cream pb-1 text-cream hover:opacity-60 transition-opacity duration-300"
+                                            >
+                                                Send Message &rarr;
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Bottom Tag */}
+                                <div className="pt-6 border-t border-cream/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-cream/60">
+                                    <p>"{MAHIM_DATA.tagline}"</p>
+                                    <p className="uppercase tracking-[0.16em]">
+                                        &copy; 2026 {MAHIM_DATA.name}
+                                    </p>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+
+                    {/* Dedicated Reading Modal for Selected Thought */}
+                    {selectedThought && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+                            <div
+                                className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                                onClick={() => setSelectedThought(null)}
+                            />
+                            <div className="relative w-full max-w-2xl bg-[#141414] border border-cream/30 p-6 sm:p-10 text-cream z-10 max-h-[85vh] overflow-y-auto editorial-scroll">
+                                <div className="flex items-start justify-between border-b border-cream/20 pb-4">
+                                    <div>
+                                        <p className="text-xs uppercase tracking-[0.2em] text-cream/50">
+                                            {selectedThought.date} &bull; {selectedThought.readTime}
+                                        </p>
+                                        <h3 className="text-2xl sm:text-3xl font-hn mt-1">
+                                            {selectedThought.title}
+                                        </h3>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedThought(null)}
+                                        className="text-cream/60 hover:text-cream transition-colors p-1"
+                                    >
+                                        <LucideX size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="py-6 space-y-4 text-sm sm:text-base leading-relaxed text-cream/90">
+                                    <p className="text-base sm:text-lg italic text-cream border-l-2 border-cream/50 pl-4 py-1">
+                                        "{selectedThought.excerpt}"
+                                    </p>
+                                    <p>{selectedThought.content}</p>
+                                </div>
+
+                                <div className="pt-4 border-t border-cream/20 flex justify-between items-center text-xs uppercase tracking-[0.16em] text-cream/50">
+                                    <span>Mahimur Rahman Khan &bull; Ideas</span>
+                                    <button
+                                        onClick={() => setSelectedThought(null)}
+                                        className="text-cream hover:underline"
+                                    >
+                                        Close Reading &rarr;
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </section>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById("root"));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
