@@ -30,7 +30,8 @@ import {
   Check,
   Keyboard,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  Gamepad2
 } from 'lucide-react';
 
 export type AtmospherePreset = 'golden-hour' | 'bioluminescent-night' | 'emerald-mist';
@@ -38,6 +39,7 @@ export type CameraPerspective = 'third-person' | 'first-person';
 
 interface ForestSanctuary3DProps {
   onSwitchToEditorial: () => void;
+  onSwitchToGame?: () => void;
 }
 
 // Deterministic pseudo-random generator for reproducible botanical placement
@@ -66,7 +68,7 @@ export function getTerrainHeight(x: number, z: number): number {
   return baseWave + hills;
 }
 
-export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctuary3DProps) {
+export default function ForestSanctuary3D({ onSwitchToEditorial, onSwitchToGame }: ForestSanctuary3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -1204,12 +1206,8 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
       <header className="fixed top-0 left-0 right-0 z-30 flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 py-3.5 pointer-events-none">
         {/* Left: Identity Pill with Live Dhaka Clock & Availability Status */}
         <div className="pointer-events-auto flex items-center gap-3 bg-[#030d12]/85 backdrop-blur-2xl border border-white/10 rounded-full pl-2 pr-4 py-1.5 shadow-2xl shadow-black/70">
-          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-emerald-400/50 shrink-0">
-            <img
-              src="/refined_mahim_portrait.jpg"
-              alt={MAHIM_PROFILE.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-emerald-400/50 shrink-0 bg-gradient-to-br from-emerald-500/30 to-teal-900 flex items-center justify-center">
+            <span className="font-mono text-xs font-bold text-emerald-300">MRK</span>
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#030d12] animate-pulse" />
           </div>
           <div>
@@ -1366,6 +1364,18 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
           >
             <Keyboard className="w-4 h-4" />
           </button>
+
+          {/* Switch to 3D Cyber Citadel Game */}
+          {onSwitchToGame && (
+            <button
+              onClick={onSwitchToGame}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-teal-400 hover:bg-teal-300 text-[#02070a] font-semibold text-xs transition-all shadow-md cursor-pointer"
+              title="Launch 3D Cyber Citadel Rover Game"
+            >
+              <Gamepad2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">3D Game</span>
+            </button>
+          )}
 
           {/* Switch to Classic 2D Editorial View */}
           <button
@@ -1641,11 +1651,14 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             {(inspectedWaypoint.id === 'sanctuary-gate' ||
               inspectedWaypoint.id === 'summit-portal') && (
               <div className="flex flex-col md:flex-row items-center gap-6 p-5 rounded-2xl bg-white/5 border border-white/10 mb-8">
-                <img
-                  src="/refined_mahim_portrait.jpg"
-                  alt={MAHIM_PROFILE.name}
-                  className="w-24 h-24 rounded-2xl object-cover border border-emerald-400/40 shrink-0"
-                />
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-950 to-black border border-emerald-400/40 shrink-0 flex flex-col items-center justify-center p-3 shadow-inner">
+                  <div className="w-8 h-8 rounded-full border border-emerald-400 flex items-center justify-center text-emerald-300 font-mono font-bold text-xs mb-1">
+                    AI
+                  </div>
+                  <span className="text-[10px] font-mono text-emerald-300 uppercase tracking-widest text-center">
+                    MRK &bull; V2
+                  </span>
+                </div>
                 <div className="space-y-2 text-xs md:text-sm text-neutral-200 leading-relaxed">
                   {MAHIM_PROFILE.bio.map((p, i) => (
                     <p key={i}>{p}</p>
