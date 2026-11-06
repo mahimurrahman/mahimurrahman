@@ -8,12 +8,12 @@ interface LoadingScreenProps {
 export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
   const [count, setCount] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
-  const words = ["Design", "Create", "Inspire"];
+  const words = ["Mathematics", "Intelligence", "Sanctuary"];
   const requestRef = useRef<number>(0);
   const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const duration = 2700;
+    const duration = 1200;
 
     const animate = (time: number) => {
       if (startTimeRef.current === null) {
@@ -27,7 +27,7 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
       if (progress < 1) {
         requestRef.current = requestAnimationFrame(animate);
       } else {
-        setTimeout(onComplete, 400);
+        setTimeout(onComplete, 150);
       }
     };
 
@@ -35,7 +35,7 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
     const wordInterval = setInterval(() => {
       setWordIndex((prev) => (prev + 1) % words.length);
-    }, 900);
+    }, 400);
 
     return () => {
       cancelAnimationFrame(requestRef.current);
@@ -45,18 +45,26 @@ export default function LoadingScreen({ onComplete }: LoadingScreenProps) {
 
   return (
     <motion.div 
-      exit={{ opacity: 0, transition: { duration: 0.5 } }}
+      exit={{ opacity: 0, transition: { duration: 0.4 } }}
       className="fixed inset-0 z-[9999] bg-bg flex flex-col justify-between p-8 md:p-12"
     >
-      {/* Top Left Label */}
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-xs text-muted uppercase tracking-[0.3em]"
-      >
-        Portfolio
-      </motion.div>
+      {/* Top Bar */}
+      <div className="flex items-center justify-between">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-xs text-muted uppercase tracking-[0.3em]"
+        >
+          Mahimur Rahman Khan • 4K 3D Forest Sanctuary
+        </motion.div>
+        <button
+          onClick={onComplete}
+          className="text-xs font-mono uppercase tracking-widest px-3.5 py-1.5 rounded-full border border-stroke text-muted hover:text-text-primary hover:border-text-primary transition-colors cursor-pointer"
+        >
+          Enter Immediately →
+        </button>
+      </div>
 
       {/* Center Rotating Words */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full flex justify-center items-center">
