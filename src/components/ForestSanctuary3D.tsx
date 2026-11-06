@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, MouseEvent } from 'react';
 import * as THREE from 'three';
 import { FOREST_WAYPOINTS, MAHIM_PROFILE, WaypointNode } from '../data/portfolioData';
+import ArchitecturalFooterModal from './ArchitecturalFooterModal';
+import ContactDrawer from './ContactDrawer';
+import KeyboardShortcutsModal from './KeyboardShortcutsModal';
+import ScrollTimelineScrubber from './ScrollTimelineScrubber';
 import {
   Compass,
   Sun,
@@ -23,7 +27,10 @@ import {
   Layers,
   Footprints,
   X,
-  Check
+  Check,
+  Keyboard,
+  Clock,
+  ArrowUpRight
 } from 'lucide-react';
 
 export type AtmospherePreset = 'golden-hour' | 'bioluminescent-night' | 'emerald-mist';
@@ -61,11 +68,17 @@ export function getTerrainHeight(x: number, z: number): number {
 
 export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctuary3DProps) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Player & Navigation state for HUD
+  // Modals & Drawers based on navbar.gallery, footer.design, cta.gallery
   const [activeWaypoint, setActiveWaypoint] = useState<WaypointNode>(FOREST_WAYPOINTS[0]);
   const [inspectedWaypoint, setInspectedWaypoint] = useState<WaypointNode | null>(null);
   const [showReaBlueprintModal, setShowReaBlueprintModal] = useState(false);
+  const [showContactDrawer, setShowContactDrawer] = useState(false);
+  const [showFooterModal, setShowFooterModal] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  // Environment & Player State
   const [progressPercent, setProgressPercent] = useState(0);
   const [atmosphere, setAtmosphere] = useState<AtmospherePreset>('bioluminescent-night');
   const [cameraMode, setCameraMode] = useState<CameraPerspective>('third-person');
@@ -73,6 +86,28 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [isWalkingState, setIsWalkingState] = useState(false);
+  const [dhakaTime, setDhakaTime] = useState('');
+  const [cardMousePos, setCardMousePos] = useState({ x: 0, y: 0 });
+
+  // Live Dhaka Clock (UTC+6)
+  useEffect(() => {
+    const updateTime = () => {
+      try {
+        const timeStr = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Dhaka',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        }).format(new Date());
+        setDhakaTime(timeStr);
+      } catch {
+        setDhakaTime('Dhaka BD');
+      }
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Mutable refs for 60fps animation loop access
   const playerStateRef = useRef({
@@ -120,7 +155,9 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
   const toggleForestAudio = useCallback(() => {
     if (!audioEnabled) {
       try {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         const ctx = new AudioContextClass();
         const masterGain = ctx.createGain();
         masterGain.gain.value = 0.18;
@@ -135,10 +172,10 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
           const white = Math.random() * 2 - 1;
           b0 = 0.99886 * b0 + white * 0.0555179;
           b1 = 0.99332 * b1 + white * 0.0750759;
-          b2 = 0.96900 * b2 + white * 0.1538520;
+          b2 = 0.96900 * b2 + white * 0.153852;
           b3 = 0.86650 * b3 + white * 0.3104856;
           b4 = 0.55000 * b4 + white * 0.5329522;
-          b5 = -0.7616 * b5 - white * 0.0168980;
+          b5 = -0.7616 * b5 - white * 0.016898;
           output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
           output[i] *= 0.04;
           b6 = white * 0.115926;
@@ -199,11 +236,27 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
     setActiveWaypoint(wp);
   }, []);
 
+  // Scrolltide timeline scrubber handler
+  const handleScrubToPercent = useCallback((pct: number) => {
+    const targetZ = 14 - (pct / 100) * 220;
+    playerStateRef.current.targetZ = targetZ;
+    setIsAutoWalking(false);
+  }, []);
+
   // Copy email helper
   const handleCopyEmail = () => {
     navigator.clipboard?.writeText(MAHIM_PROFILE.email);
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2500);
+  };
+
+  const handleCardMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    setCardMousePos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
   };
 
   // Main Three.js 4K Procedural Forest Sanctuary setup
@@ -730,7 +783,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
 
     scene.add(avatarGroup);
 
-    // 11. BIOLUMINESCENT FIREFLIES & FLOATINGPOLLEN PARTICLE FIELD
+    // 11. BIOLUMINESCENT FIREFLIES & FLOATING POLLEN PARTICLE FIELD
     const fireflyCount = 750;
     const fireflyGeo = new THREE.BufferGeometry();
     const ffPositions = new Float32Array(fireflyCount * 3);
@@ -789,8 +842,64 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
 
     // 12. INPUT LISTENERS (KEYBOARD, SCROLL WHEEL, POINTER DRAG)
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore navigation keys if typing in input
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') {
+        return;
+      }
+
       const k = e.key.toLowerCase();
       const st = playerStateRef.current;
+
+      // Close modals on Escape
+      if (e.key === 'Escape') {
+        setInspectedWaypoint(null);
+        setShowReaBlueprintModal(false);
+        setShowContactDrawer(false);
+        setShowFooterModal(false);
+        setShowShortcutsModal(false);
+        return;
+      }
+
+      // Hotkey: Space toggles auto-walk stroll
+      if (e.key === ' ' && !e.repeat) {
+        e.preventDefault();
+        setIsAutoWalking((prev) => !prev);
+        return;
+      }
+
+      // Hotkey: M toggles forest audio
+      if (k === 'm' && !e.repeat) {
+        toggleForestAudio();
+        return;
+      }
+
+      // Hotkey: C toggles camera perspective
+      if (k === 'c' && !e.repeat) {
+        setCameraMode((prev) => (prev === 'third-person' ? 'first-person' : 'third-person'));
+        return;
+      }
+
+      // Hotkey: F toggles architectural footer (footer.design)
+      if (k === 'f' && !e.repeat) {
+        setShowFooterModal((prev) => !prev);
+        return;
+      }
+
+      // Hotkey: ? toggles keyboard guide (styles.refero.design)
+      if ((e.key === '?' || e.key === '/') && !e.repeat) {
+        setShowShortcutsModal((prev) => !prev);
+        return;
+      }
+
+      // Hotkey: 1 to 6 jumps to shrines
+      if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+        const idx = parseInt(e.key, 10) - 1;
+        if (FOREST_WAYPOINTS[idx]) {
+          walkToWaypoint(FOREST_WAYPOINTS[idx]);
+        }
+        return;
+      }
+
       if (k === 'w' || e.key === 'ArrowUp') {
         st.keys.forward = true;
         st.targetZ = null;
@@ -821,21 +930,20 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
     };
 
     const handleWheel = (e: WheelEvent) => {
-      // Only scroll the 3D walker if no modal is open
       const st = playerStateRef.current;
       st.targetZ = null;
       st.velocityZ -= e.deltaY * 0.0085;
       st.velocityZ = Math.max(-18, Math.min(18, st.velocityZ));
     };
 
-    const handlePointerDown = (e: MouseEvent) => {
+    const handlePointerDown = (e: MouseEvent<HTMLDivElement> | globalThis.MouseEvent) => {
       const st = playerStateRef.current;
       st.isDragging = true;
       st.lastMouseX = e.clientX;
       st.lastMouseY = e.clientY;
     };
 
-    const handlePointerMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: globalThis.MouseEvent) => {
       const st = playerStateRef.current;
       if (!st.isDragging) return;
       const dx = e.clientX - st.lastMouseX;
@@ -1016,7 +1124,8 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
       } else {
         const eyePos = new THREE.Vector3(st.x, st.y + 1.72, st.z - 0.15);
         camera.position.lerp(eyePos, 0.22);
-        const lookDirX = st.x - Math.sin(st.cameraYawOffset) * 12 + (getPathX(st.z - 10) - st.x) * 0.6;
+        const lookDirX =
+          st.x - Math.sin(st.cameraYawOffset) * 12 + (getPathX(st.z - 10) - st.x) * 0.6;
         const lookDirY = st.y + 1.6 - st.cameraPitchOffset * 5.0;
         const lookDirZ = st.z - Math.cos(st.cameraYawOffset) * 12;
         camera.lookAt(lookDirX, lookDirY, lookDirZ);
@@ -1077,49 +1186,56 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#030f14] text-[#f5f5f5] select-none font-sans">
       {/* 3D WebGL Viewport Container */}
-      <div ref={mountRef} className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing" />
+      <div
+        ref={mountRef}
+        className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+      />
 
       {/* Subtle Cinematic Vignette Overlay */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(circle at center, transparent 58%, rgba(2, 10, 14, 0.68) 100%)'
+            'radial-gradient(circle at center, transparent 55%, rgba(2, 10, 14, 0.72) 100%)'
         }}
       />
 
-      {/* TOP NAVIGATION & ENVIRONMENT HUD */}
-      <header className="fixed top-0 left-0 right-0 z-30 flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 py-4 pointer-events-none">
-        {/* Identity & Biome Status */}
-        <div className="pointer-events-auto flex items-center gap-3.5 bg-[#07181d]/80 backdrop-blur-xl border border-emerald-500/20 rounded-full pl-2.5 pr-5 py-1.5 shadow-lg shadow-black/40">
+      {/* 1. TOP FLOATING ISLAND NAVBAR (Navbar.gallery + Styles.refero.design standard) */}
+      <header className="fixed top-0 left-0 right-0 z-30 flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 py-3.5 pointer-events-none">
+        {/* Left: Identity Pill with Live Dhaka Clock & Availability Status */}
+        <div className="pointer-events-auto flex items-center gap-3 bg-[#030d12]/85 backdrop-blur-2xl border border-white/10 rounded-full pl-2 pr-4 py-1.5 shadow-2xl shadow-black/70">
           <div className="relative w-9 h-9 rounded-full overflow-hidden border border-emerald-400/50 shrink-0">
             <img
               src="/refined_mahim_portrait.jpg"
               alt={MAHIM_PROFILE.name}
               className="w-full h-full object-cover"
             />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#07181d]" />
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#030d12] animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold tracking-tight text-white">
                 {MAHIM_PROFILE.name}
               </span>
-              <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                4K 3D Sanctuary
+              <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Available for AI Systems
               </span>
             </div>
-            <div className="text-[11px] text-emerald-200/70 flex items-center gap-1.5">
+            <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 font-mono">
               <Compass className="w-3 h-3 text-emerald-400" />
-              <span>{activeWaypoint.biome}</span>
-              <span className="opacity-40">•</span>
-              <span>{progressPercent}% Explored</span>
+              <span className="text-emerald-200/90 truncate">{activeWaypoint.biome}</span>
+              <span className="opacity-30">&bull;</span>
+              <span className="text-white/80 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-neutral-500" />
+                {dhakaTime} GMT+6
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Center Waypoint Stepper Pills */}
-        <nav className="pointer-events-auto hidden xl:flex items-center gap-1 bg-[#07181d]/80 backdrop-blur-xl border border-white/10 rounded-full p-1.5 shadow-lg">
+        {/* Center: Shrine Stepper Breadcrumbs (navbar.gallery segment switcher) */}
+        <nav className="pointer-events-auto hidden xl:flex items-center gap-1 bg-[#030d12]/85 backdrop-blur-2xl border border-white/10 rounded-full p-1.5 shadow-2xl shadow-black/70">
           {FOREST_WAYPOINTS.map((wp) => {
             const isActive = wp.id === activeWaypoint.id;
             return (
@@ -1128,7 +1244,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
                 onClick={() => walkToWaypoint(wp)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
                   isActive
-                    ? 'bg-emerald-400 text-[#041318] font-semibold shadow-sm'
+                    ? 'bg-emerald-400 text-[#041318] font-semibold shadow-md shadow-emerald-400/20'
                     : 'text-neutral-300 hover:text-white hover:bg-white/5'
                 }`}
               >
@@ -1139,19 +1255,46 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
           })}
         </nav>
 
-        {/* Right Controls: REA System Blueprint, Atmosphere, Camera, Audio, 2D Switch */}
+        {/* Right: Interactive Controls (Sound EQ, REA Blueprint, Atmosphere, Camera, Connect, Shortcuts) */}
         <div className="pointer-events-auto flex items-center gap-2">
-          {/* Dedicated REA Reverse Engineering Blueprint Modal Trigger */}
+          {/* Audio Soundscape Toggle with Animated EQ Equalizer Bars */}
+          <button
+            onClick={toggleForestAudio}
+            className={`px-3 py-2 rounded-full border backdrop-blur-2xl transition-all flex items-center gap-2 text-xs font-mono cursor-pointer ${
+              audioEnabled
+                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300 shadow-md shadow-emerald-500/20'
+                : 'bg-[#030d12]/85 border-white/10 text-neutral-400 hover:text-white'
+            }`}
+            title="Toggle Procedural Forest Breeze & Sanctuary Audio (Hotkey: M)"
+          >
+            {audioEnabled ? (
+              <>
+                <div className="flex items-end gap-0.5 h-3">
+                  <span className="w-0.5 h-2 bg-emerald-400 animate-pulse" />
+                  <span className="w-0.5 h-3 bg-emerald-300 animate-pulse delay-75" />
+                  <span className="w-0.5 h-1.5 bg-emerald-400 animate-pulse delay-150" />
+                </div>
+                <span className="hidden sm:inline">Audio On</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Audio</span>
+              </>
+            )}
+          </button>
+
+          {/* Dedicated REA Reverse Engineering Blueprint Trigger */}
           <button
             onClick={() => setShowReaBlueprintModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-medium bg-teal-500/15 hover:bg-teal-500/25 text-teal-200 border border-teal-400/35 backdrop-blur-xl transition-all cursor-pointer shadow-lg"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-teal-500/15 hover:bg-teal-500/25 text-teal-200 border border-teal-400/35 backdrop-blur-2xl transition-all cursor-pointer shadow-lg"
             title="Inspect REA (morluto/rea) Reverse Engineering System Architecture"
           >
             <Cpu className="w-3.5 h-3.5 text-teal-300" />
-            <span className="hidden sm:inline">REA System Matrix</span>
+            <span className="hidden sm:inline">REA Matrix</span>
           </button>
 
-          {/* Atmosphere Switcher */}
+          {/* Atmosphere Preset Cycle */}
           <button
             onClick={() =>
               setAtmosphere((prev) =>
@@ -1162,7 +1305,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
                   : 'bioluminescent-night'
               )
             }
-            className="p-2.5 rounded-full bg-[#07181d]/80 hover:bg-[#0c262e] border border-white/10 text-emerald-300 backdrop-blur-xl transition-colors cursor-pointer"
+            className="p-2.5 rounded-full bg-[#030d12]/85 hover:bg-[#071d24] border border-white/10 text-emerald-300 backdrop-blur-2xl transition-colors cursor-pointer"
             title={`Atmosphere: ${atmosphere} (Click to cycle)`}
           >
             {atmosphere === 'golden-hour' ? (
@@ -1174,15 +1317,15 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             )}
           </button>
 
-          {/* 1st / 3rd Person Camera Toggle */}
+          {/* 1st / 3rd Person Camera Toggle (Hotkey: C) */}
           <button
             onClick={() =>
               setCameraMode((prev) =>
                 prev === 'third-person' ? 'first-person' : 'third-person'
               )
             }
-            className="px-3 py-2 rounded-full bg-[#07181d]/80 hover:bg-[#0c262e] border border-white/10 text-xs text-neutral-200 flex items-center gap-1.5 backdrop-blur-xl transition-colors cursor-pointer"
-            title="Switch between 3rd-Person Avatar Walk and 1st-Person Forest View"
+            className="px-3 py-2 rounded-full bg-[#030d12]/85 hover:bg-[#071d24] border border-white/10 text-xs text-neutral-200 flex items-center gap-1.5 backdrop-blur-2xl transition-colors cursor-pointer"
+            title="Switch between 3rd-Person Avatar Walk and 1st-Person Forest View (Hotkey: C)"
           >
             {cameraMode === 'third-person' ? (
               <>
@@ -1197,44 +1340,58 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             )}
           </button>
 
-          {/* Procedural Forest Soundscape Toggle */}
+          {/* Direct CTA: Connect Drawer (cta.gallery standard) */}
           <button
-            onClick={toggleForestAudio}
-            className={`p-2.5 rounded-full border backdrop-blur-xl transition-colors cursor-pointer ${
-              audioEnabled
-                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
-                : 'bg-[#07181d]/80 border-white/10 text-neutral-400 hover:text-white'
-            }`}
-            title="Toggle Procedural Forest Breeze & Sanctuary Harmonic Audio"
+            onClick={() => setShowContactDrawer(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-400 hover:bg-emerald-300 text-[#041318] font-semibold text-xs transition-all shadow-md shadow-emerald-950/60 cursor-pointer"
           >
-            {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            <Mail className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Connect</span>
+          </button>
+
+          {/* Architectural Footer Trigger (footer.design standard, Hotkey: F) */}
+          <button
+            onClick={() => setShowFooterModal(true)}
+            className="p-2.5 rounded-full bg-[#030d12]/85 hover:bg-[#071d24] border border-white/10 text-neutral-300 hover:text-white backdrop-blur-2xl transition-colors cursor-pointer"
+            title="Open Architectural Footer & Sitemap (Hotkey: F)"
+          >
+            <Navigation className="w-4 h-4" />
+          </button>
+
+          {/* Keyboard Shortcuts Guide Helper (styles.refero.design standard, Hotkey: ?) */}
+          <button
+            onClick={() => setShowShortcutsModal(true)}
+            className="p-2.5 rounded-full bg-[#030d12]/85 hover:bg-[#071d24] border border-white/10 text-neutral-300 hover:text-white backdrop-blur-2xl transition-colors cursor-pointer"
+            title="Keyboard & Navigation Shortcuts Guide (Hotkey: ?)"
+          >
+            <Keyboard className="w-4 h-4" />
           </button>
 
           {/* Switch to Classic 2D Editorial View */}
           <button
             onClick={onSwitchToEditorial}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs font-medium backdrop-blur-xl transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 text-xs font-medium backdrop-blur-2xl transition-all cursor-pointer"
           >
             <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Classic 2D View</span>
+            <span className="hidden sm:inline">2D View</span>
           </button>
         </div>
       </header>
 
-      {/* LEFT SIDEBAR: INTERACTIVE FOREST TRAIL MINIMAP & CONTROLS */}
+      {/* 2. LEFT SIDEBAR: INTERACTIVE FOREST TRAIL MINIMAP & CONTROLS */}
       <aside className="fixed left-4 md:left-8 top-1/2 -translate-y-1/2 z-20 hidden lg:flex flex-col gap-3 pointer-events-auto">
-        <div className="bg-[#07181d]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 w-56 shadow-2xl">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-[#030d12]/85 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 w-60 shadow-2xl shadow-black/80">
+          <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
             <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-300/90 flex items-center gap-1.5">
-              <Navigation className="w-3 h-3" />
-              Forest Trail Map
+              <Compass className="w-3.5 h-3.5" />
+              Trail Navigation
             </span>
             <span className="text-[11px] font-mono text-neutral-400">
               0{currentIndex + 1} / 0{FOREST_WAYPOINTS.length}
             </span>
           </div>
 
-          <div className="relative flex flex-col gap-2.5 pl-3 border-l border-emerald-500/25">
+          <div className="relative flex flex-col gap-2 pl-3 border-l border-emerald-500/25">
             {FOREST_WAYPOINTS.map((wp) => {
               const isCurrent = wp.id === activeWaypoint.id;
               return (
@@ -1259,53 +1416,75 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             })}
           </div>
 
-          {/* Autopilot Stroll Toggle */}
+          {/* Autopilot Stroll Toggle (Hotkey: Space) */}
           <button
             onClick={() => {
               playerStateRef.current.targetZ = null;
               setIsAutoWalking((prev) => !prev);
             }}
-            className={`mt-4 w-full py-2 px-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 border transition-all cursor-pointer ${
+            className={`mt-4 w-full py-2.5 px-3 rounded-2xl text-xs font-medium flex items-center justify-center gap-2 border transition-all cursor-pointer ${
               isAutoWalking
-                ? 'bg-emerald-400 text-[#041318] border-emerald-300 font-semibold'
+                ? 'bg-emerald-400 text-[#041318] border-emerald-300 font-semibold shadow-md'
                 : 'bg-white/5 hover:bg-white/10 text-emerald-200 border-white/10'
             }`}
           >
             {isAutoWalking ? (
               <>
                 <Pause className="w-3.5 h-3.5" />
-                <span>Pause Auto-Walk</span>
+                <span>Pause Auto-Walk (Space)</span>
               </>
             ) : (
               <>
                 <Play className="w-3.5 h-3.5" />
-                <span>Auto-Walk Forest</span>
+                <span>Auto-Walk Forest (Space)</span>
               </>
             )}
           </button>
 
-          {/* Controls Legend */}
-          <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-neutral-400 space-y-1">
+          {/* Controls Quick Hints */}
+          <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-neutral-400 space-y-1 font-mono">
             <div className="flex justify-between">
-              <span>Walk / Strafe:</span>
-              <span className="font-mono text-neutral-200">W A S D / Arrows</span>
+              <span>Walk:</span>
+              <span className="text-neutral-200">W A S D</span>
             </div>
             <div className="flex justify-between">
-              <span>Glide Path:</span>
-              <span className="font-mono text-neutral-200">Scroll Wheel</span>
+              <span>Timeline:</span>
+              <span className="text-neutral-200">Scroll / Drag</span>
             </div>
             <div className="flex justify-between">
-              <span>Look Around:</span>
-              <span className="font-mono text-neutral-200">Click + Drag</span>
+              <span>Shortcuts:</span>
+              <span className="text-emerald-400">[?] or Click</span>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* BOTTOM SPATIAL WAYPOINT CARD & WALKING HUD */}
-      <div className="fixed bottom-4 md:bottom-7 left-4 right-4 md:left-8 md:right-8 z-20 flex flex-col md:flex-row items-stretch md:items-end justify-between gap-4 pointer-events-none">
-        {/* Active Clearing Card */}
-        <div className="pointer-events-auto max-w-xl w-full bg-[#07181d]/85 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 md:p-6 shadow-2xl shadow-black/60 transition-all duration-500">
+      {/* 3. BOTTOM SPATIAL WAYPOINT CARD & SCROLLTIDE SCRUBBER (cta.gallery + scrolltide.co) */}
+      <div className="fixed bottom-4 md:bottom-6 left-4 right-4 md:left-8 md:right-8 z-20 flex flex-col md:flex-row items-stretch md:items-end justify-between gap-4 pointer-events-none">
+        {/* Active Clearing Magnetic Spotlight Card */}
+        <div
+          ref={cardRef}
+          onMouseMove={handleCardMouseMove}
+          className="pointer-events-auto relative max-w-xl w-full bg-[#030d12]/85 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 md:p-6 shadow-2xl shadow-black/80 transition-all duration-300 overflow-hidden"
+        >
+          {/* Mouse tracking radial spotlight glow (cta.gallery style) */}
+          <div
+            className="pointer-events-none absolute -inset-px rounded-3xl opacity-50 transition-opacity"
+            style={{
+              background: `radial-gradient(350px circle at ${cardMousePos.x}px ${cardMousePos.y}px, rgba(52, 211, 153, 0.18), transparent 45%)`
+            }}
+          />
+
+          {/* Scrolltide 3D Path Timeline Scrubber embedded at top of card */}
+          <div className="mb-4 pb-3 border-b border-white/10">
+            <ScrollTimelineScrubber
+              progressPercent={progressPercent}
+              activeWaypoint={activeWaypoint}
+              onScrubToPercent={handleScrubToPercent}
+              onTeleportToWaypoint={walkToWaypoint}
+            />
+          </div>
+
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
               <span
@@ -1314,7 +1493,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
               >
                 Shrine {activeWaypoint.number}
               </span>
-              <span className="text-xs font-mono text-emerald-300/90">
+              <span className="text-xs font-mono text-emerald-300/90 truncate">
                 {activeWaypoint.subtitle}
               </span>
             </div>
@@ -1340,14 +1519,14 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             {activeWaypoint.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-neutral-300"
+                className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-neutral-300"
               >
                 {tag}
               </span>
             ))}
           </div>
 
-          {/* Card Actions */}
+          {/* Card Actions (cta.gallery magnetic buttons) */}
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => setInspectedWaypoint(activeWaypoint)}
@@ -1363,7 +1542,17 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
                 className="px-4 py-2.5 rounded-full bg-teal-500/20 hover:bg-teal-500/30 text-teal-200 border border-teal-400/40 text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Terminal className="w-3.5 h-3.5" />
-                <span>Interactive REA Architecture</span>
+                <span>REA System Matrix</span>
+              </button>
+            )}
+
+            {activeWaypoint.id === 'summit-portal' && (
+              <button
+                onClick={() => setShowContactDrawer(true)}
+                className="px-4 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-[#041318] font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>Connect With Mahim</span>
               </button>
             )}
 
@@ -1388,7 +1577,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
                 className="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-medium flex items-center gap-1 transition-colors cursor-pointer"
                 title="Walk to Next Shrine"
               >
-                <span>Next Clearing</span>
+                <span>Next</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -1396,7 +1585,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
         </div>
 
         {/* Mobile / Touch On-Screen Walk Pad */}
-        <div className="pointer-events-auto flex lg:hidden items-center justify-between gap-2 bg-[#07181d]/85 backdrop-blur-xl border border-white/15 rounded-2xl p-2.5">
+        <div className="pointer-events-auto flex lg:hidden items-center justify-between gap-2 bg-[#030d12]/85 backdrop-blur-2xl border border-white/15 rounded-2xl p-2.5">
           <button
             onTouchStart={() => (playerStateRef.current.keys.forward = true)}
             onTouchEnd={() => (playerStateRef.current.keys.forward = false)}
@@ -1418,10 +1607,10 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
         </div>
       </div>
 
-      {/* MODAL 1: WAYPOINT SHRINE DEEP DOSSIER */}
+      {/* 4. MODAL: WAYPOINT SHRINE DEEP DOSSIER */}
       {inspectedWaypoint && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/75 backdrop-blur-md animate-fadeIn">
-          <div className="relative max-w-4xl w-full max-h-[88vh] overflow-y-auto bg-[#07181d] border border-emerald-500/30 rounded-3xl p-6 md:p-10 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-xl animate-fadeIn">
+          <div className="relative max-w-4xl w-full max-h-[88vh] overflow-y-auto bg-[#040e12] border border-emerald-500/30 rounded-3xl p-6 md:p-10 shadow-2xl font-sans text-cream">
             <button
               onClick={() => setInspectedWaypoint(null)}
               className="sticky top-2 float-right p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
@@ -1474,18 +1663,18 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
               </p>
             </div>
 
-            {/* Metrics Grid */}
+            {/* Metrics Grid (styles.refero.design telemetry cards) */}
             {inspectedWaypoint.details.metrics && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                 {inspectedWaypoint.details.metrics.map((m) => (
                   <div
                     key={m.label}
-                    className="p-4 rounded-2xl bg-black/35 border border-white/10"
+                    className="p-4 rounded-2xl bg-black/50 border border-white/10"
                   >
                     <div className="text-[11px] font-mono uppercase tracking-wider text-neutral-400 mb-1">
                       {m.label}
                     </div>
-                    <div className="text-sm md:text-base font-semibold text-white">
+                    <div className="text-sm md:text-base font-semibold text-white font-mono">
                       {m.value}
                     </div>
                   </div>
@@ -1532,13 +1721,16 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             {/* Quick External Links & Contact Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-white/10">
               <div className="flex flex-wrap items-center gap-2.5">
-                <a
-                  href={`mailto:${MAHIM_PROFILE.email}`}
-                  className="px-4 py-2 rounded-full bg-emerald-400 text-[#041318] font-semibold text-xs flex items-center gap-1.5"
+                <button
+                  onClick={() => {
+                    setInspectedWaypoint(null);
+                    setShowContactDrawer(true);
+                  }}
+                  className="px-4 py-2 rounded-full bg-emerald-400 text-[#041318] font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
                 >
                   <Mail className="w-3.5 h-3.5" />
-                  <span>Email Mahim</span>
-                </a>
+                  <span>Connect With Mahim</span>
+                </button>
                 <button
                   onClick={handleCopyEmail}
                   className="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/15 text-xs text-white flex items-center gap-1.5 cursor-pointer"
@@ -1583,10 +1775,10 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
         </div>
       )}
 
-      {/* MODAL 2: INTERACTIVE REA (morluto/rea) REVERSE ENGINEERING SYSTEM ARCHITECTURE */}
+      {/* 5. MODAL: INTERACTIVE REA (morluto/rea) REVERSE ENGINEERING SYSTEM ARCHITECTURE */}
       {showReaBlueprintModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md">
-          <div className="relative max-w-5xl w-full max-h-[90vh] overflow-y-auto bg-[#06151a] border border-teal-400/35 rounded-3xl p-6 md:p-10 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/85 backdrop-blur-xl animate-fadeIn">
+          <div className="relative max-w-5xl w-full max-h-[90vh] overflow-y-auto bg-[#040e12] border border-teal-400/35 rounded-3xl p-6 md:p-10 shadow-2xl font-sans text-cream">
             <button
               onClick={() => setShowReaBlueprintModal(false)}
               className="sticky top-2 float-right p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
@@ -1596,7 +1788,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
 
             <div className="flex items-center gap-2.5 mb-2">
               <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-teal-400 text-[#041318]">
-                SYSTEM ANALYSIS
+                SYSTEM MATRIX
               </span>
               <a
                 href="https://github.com/morluto/rea"
@@ -1610,12 +1802,12 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             </div>
 
             <h2 className="text-3xl md:text-4xl font-display italic text-white mb-3">
-              REA: Reverse Engineer Anything — Architectural Breakdown
+              REA: Reverse Engineer Anything &mdash; Architectural Breakdown
             </h2>
             <p className="text-sm text-neutral-300 max-w-3xl leading-relaxed mb-8">
               One Model Context Protocol (MCP) server and CLI system for reverse engineering across
               native binaries, JavaScript/Electron applications, .NET assemblies, Android APKs,
-              firmware, and live runtime behavior — engineered with inward-flowing dependencies and
+              firmware, and live runtime behavior &mdash; engineered with inward-flowing dependencies and
               strict Evidence provenance.
             </p>
 
@@ -1666,34 +1858,40 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
             </div>
 
             {/* Target Matrix Table */}
-            <h3 className="text-lg font-semibold text-teal-200 mb-3">
+            <h3 className="text-lg font-semibold text-teal-200 mb-3 font-display italic">
               Supported Target Capabilities & Provenance Outputs
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
               {[
                 {
                   target: 'Native Binaries (ELF / PE / Mach-O / DOS)',
-                  output: 'Pseudocode, assembly, CFG, strings, symbols, xrefs via Hopper, Ghidra, IDA, Kuna, Rizin, objdump'
+                  output:
+                    'Pseudocode, assembly, CFG, strings, symbols, xrefs via Hopper, Ghidra, IDA, Kuna, Rizin, objdump'
                 },
                 {
                   target: 'JavaScript & Electron Apps',
-                  output: 'ASAR extraction, AST module graphs, preload/IPC boundaries, source-map reconstruction, V8 Inspector'
+                  output:
+                    'ASAR extraction, AST module graphs, preload/IPC boundaries, source-map reconstruction, V8 Inspector'
                 },
                 {
                   target: '.NET Assemblies & IL2CPP / Godot',
-                  output: 'PE/CLI metadata, CIL instructions, Unity global-metadata.dat (v24–39), Godot PCK v2–4 inventory'
+                  output:
+                    'PE/CLI metadata, CIL instructions, Unity global-metadata.dat (v24–39), Godot PCK v2–4 inventory'
                 },
                 {
                   target: 'Android APK / JEB / Flutter / ADB',
-                  output: 'Headless JADX decompilation, v1–v3.1 APK signatures, Apktool resources, Dart snapshot IDs, live ADB'
+                  output:
+                    'Headless JADX decompilation, v1–v3.1 APK signatures, Apktool resources, Dart snapshot IDs, live ADB'
                 },
                 {
                   target: 'AI Models, GPU & EVM Bytecode',
-                  output: 'GGUF & safetensors tensor headers, CUDA fatbin/CUBIN/PTX kernels, EVM selector & mutability dispatch'
+                  output:
+                    'GGUF & safetensors tensor headers, CUDA fatbin/CUBIN/PTX kernels, EVM selector & mutability dispatch'
                 },
                 {
                   target: 'RL AgentEnv Synthesis & Captures',
-                  output: 'Transforms recorded browser HAR/SAZ/pcap sessions into runnable Dockerized RL environments for AI agents'
+                  output:
+                    'Transforms recorded browser HAR/SAZ/pcap sessions into runnable Dockerized RL environments for AI agents'
                 }
               ].map((cap) => (
                 <div
@@ -1708,7 +1906,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-white/10">
               <div className="text-xs text-neutral-400 font-mono">
-                Quick CLI: <code className="text-teal-300">npx rea-agents setup</code> •{' '}
+                Quick CLI: <code className="text-teal-300">npx rea-agents setup</code> &bull;{' '}
                 <code className="text-teal-300">rea environment-build ./session.har ./my-env</code>
               </div>
               <div className="flex items-center gap-2">
@@ -1717,7 +1915,7 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
                     setShowReaBlueprintModal(false);
                     walkToWaypoint(FOREST_WAYPOINTS[1]);
                   }}
-                  className="px-4 py-2 rounded-full bg-teal-400 text-[#041318] font-semibold text-xs cursor-pointer"
+                  className="px-4 py-2 rounded-full bg-teal-400 text-[#041318] font-semibold text-xs cursor-pointer shadow-md"
                 >
                   Walk to REA Shrine in 3D Forest
                 </button>
@@ -1732,6 +1930,26 @@ export default function ForestSanctuary3D({ onSwitchToEditorial }: ForestSanctua
           </div>
         </div>
       )}
+
+      {/* 6. MODAL: CONTACT DRAWER (cta.gallery standard) */}
+      <ContactDrawer
+        isOpen={showContactDrawer}
+        onClose={() => setShowContactDrawer(false)}
+      />
+
+      {/* 7. MODAL: ARCHITECTURAL FOOTER (footer.design standard) */}
+      <ArchitecturalFooterModal
+        isOpen={showFooterModal}
+        onClose={() => setShowFooterModal(false)}
+        onTeleportToWaypoint={walkToWaypoint}
+        onOpenReaModal={() => setShowReaBlueprintModal(true)}
+      />
+
+      {/* 8. MODAL: KEYBOARD SHORTCUTS GUIDE (styles.refero.design standard) */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+      />
     </div>
   );
 }
