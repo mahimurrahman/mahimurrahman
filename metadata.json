@@ -1,0 +1,6 @@
+{
+  "name": "Interactive 3D Portfolio",
+  "description": "Drivable 3D island portfolio built with Three.js WebGPU/TSL, Rapier3D physics, and spatial audio (MIT, credit Bruno Simon).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
